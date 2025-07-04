@@ -1,0 +1,4 @@
+8psk
+bpsk
+qam16
+qpsk
