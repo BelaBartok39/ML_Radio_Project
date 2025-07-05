@@ -70,7 +70,20 @@ This repository provides a modular stack for RF Machine Learning (RFML) from dat
 
 7. **Inference / Deployment**
    - TorchScript inference: `src/deployment/inference.py`
-   - TensorRT conversion: `src/deployment/tensorrt_builder.py`
+   - TensorRT builder: `src/deployment/tensorrt_builder.py`
+   - Build TensorRT engine:
+     ```bash
+     python3 src/deployment/tensorrt_builder.py \
+       --model deployments/rfml_cnn.pt \
+       --engine deployments/rfml_cnn_trt.pth \
+       --input-length 1024 --batch-size 1 --fp16
+     ```
+   - Jetson-optimized inference (TorchScript or TRT):
+     ```bash
+     python3 src/deployment/inference_jetson.py \
+       --data dataset.h5 --model deployments/rfml_cnn.pt \
+       --trt-engine deployments/rfml_cnn_trt.pth --input-length 1024
+     ```
 
 ## Configuration
 
