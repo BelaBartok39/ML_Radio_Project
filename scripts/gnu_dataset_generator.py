@@ -3,7 +3,8 @@
 Improved 5G Jamming Avoidance Dataset Generator using GNU Radio
 - Uses actual GNU Radio signal chains for modulation
 - Adds realistic OFDM framing
-- Balances modulation class distribution
+- Balances modulation class dif __name__ == '__main__':
+    generate_dataset('test_fixed_jsr.h5', num_samples=50)tribution
 - ML-ready HDF5 output format
 """
 
@@ -175,7 +176,10 @@ def generate_dataset(filename, num_samples=10, val_ratio=0.1, test_ratio=0.1):
                     jsr = 0.0
                     jtype = b'none'
 
-                sig /= (np.max(np.abs(sig)) + 1e-12)
+                # Use RMS normalization to preserve JSR relationships
+                # instead of peak normalization which destroys jamming effects
+                rms_power = np.sqrt(np.mean(np.abs(sig) ** 2))
+                sig /= (rms_power + 1e-12)
 
                 # Assign sample to split randomly but balanced by count
                 # Simple round robin to keep balanced splits

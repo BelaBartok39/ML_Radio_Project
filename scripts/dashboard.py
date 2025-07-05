@@ -27,7 +27,7 @@ st.set_page_config(page_title="RFML Dashboard", layout="wide")
 st.title("RFML Dataset Viewer & Classifier")
 
 # Sidebar inputs
-dataset_path = st.sidebar.text_input("Dataset file (HDF5)", "gnuradio_jamming_dataset.h5")
+dataset_path = st.sidebar.text_input("Dataset file (HDF5)", "test_fixed_jsr.h5")
 model_path   = st.sidebar.text_input("TorchScript model file", "/home/jackthelion83/ML_Radio_Project/deployments/rfml_cnn_test.pt")
 input_length = st.sidebar.number_input("Input length", value=1024, step=1)
 
