@@ -11,19 +11,24 @@ except ImportError:
 
 import h5py
 import numpy as np
+import matplotlib.pyplot as plt
+import os
 try:
     import torch
 except ImportError:
     torch = None
     st.sidebar.error("PyTorch is not installed. Install it with: pip install torch")
-import matplotlib.pyplot as plt
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.data.modulation_jamming_dataset import ModulationJammingDataset
+import torch.nn.functional as F
 
 st.set_page_config(page_title="RFML Dashboard", layout="wide")
 st.title("RFML Dataset Viewer & Classifier")
 
 # Sidebar inputs
 dataset_path = st.sidebar.text_input("Dataset file (HDF5)", "dataset_big_test.h5")
-model_path = st.sidebar.text_input("TorchScript model file", "/home/jackthelion83/ML_Radio_Project/deployment/multitask_cnn.pt")
+model_path   = st.sidebar.text_input("TorchScript model file", "/home/jackthelion83/ML_Radio_Project/deployment/multitask_cnn.pt")
 input_length = st.sidebar.number_input("Input length", value=1024, step=1)
 
 # Load dataset
@@ -33,20 +38,27 @@ if dataset_path:
     except Exception as e:
         st.error(f"Failed to open dataset: {e}")
         st.stop()
+
     splits = list(f.keys())
     split = st.sidebar.selectbox("Data split", splits)
     n_samples = f[split]['signals'].shape[0]
-    idx = st.sidebar.slider("Sample index", 0, n_samples-1, 0)
+    idx = st.sidebar.slider("Sample index", 0, n_samples - 1, 0)
 
     # Display true labels
-    signal = f[split]['signals'][idx]
+    signal    = f[split]['signals'][idx]
     mod_label = f[split]['modulation'][idx].astype(str)
     jam_label = bool(f[split]['jammed'][idx])
     st.subheader(f"Sample {idx} ({split})")
     st.write(f"**True modulation:** {mod_label}")
     st.write(f"**Jammed:** {jam_label}")
 
-    # Plot I/Q time-domain
+    # Prepare class mappings for prediction labels
+    ds = ModulationJammingDataset(dataset_path, split=split)
+    mod_classes      = ds.mod_classes
+    jam_type_classes = ds.jam_type_classes
+    jam_classes      = ['Clean', 'Jammed']
+
+    # Plot I/Q time-domain and spectrum
     t = np.arange(len(signal))
     fig, axs = plt.subplots(2, 1, figsize=(8, 4))
     axs[0].plot(t, signal.real, label='I')
@@ -56,6 +68,15 @@ if dataset_path:
     axs[1].magnitude_spectrum(signal, Fs=1.0)
     axs[1].set_title('Frequency Spectrum')
     st.pyplot(fig)
+
+        # Add Constellation Diagram to visualize jamming
+    fig2, ax2 = plt.subplots(1, 1, figsize=(4, 4))
+    ax2.scatter(signal.real, signal.imag, alpha=0.3, s=10)
+    ax2.set_title("Constellation Diagram")
+    ax2.set_ylabel("Quadrature")
+    ax2.set_xlabel("In-phase")
+    ax2.grid(True)
+    st.pyplot(fig2)
 
     # Run model inference if provided
     if model_path:
@@ -70,22 +91,49 @@ if dataset_path:
             except Exception as e:
                 st.error(f"Failed to load model: {e}")
             else:
+                # Prepare input tensor
                 iq = np.stack((signal.real, signal.imag), axis=0)
                 tensor = torch.tensor(iq, dtype=torch.float32).unsqueeze(0).to(device)
+
                 with torch.no_grad():
                     out = model(tensor)
-                    # unpack mod logits
-                    if isinstance(out, (tuple, list)):
-                        mod_logits = out[0]
-                    elif hasattr(out, 'mod'):
-                        mod_logits = out.mod
+                    # Unpack multi-task outputs
+                    if isinstance(out, (tuple, list)) and len(out) == 3:
+                        mod_logits, jam_logits, jamtype_logits = out
+                    elif isinstance(out, dict):
+                        mod_logits     = out.get('mod')
+                        jam_logits     = out.get('jam')
+                        jamtype_logits = out.get('jam_type')
                     else:
-                        mod_logits = out
-                    probs = torch.softmax(mod_logits, dim=1).cpu().numpy().flatten()
-                st.write("**Prediction probabilities:**")
-                st.bar_chart(probs)
-                pred = int(np.argmax(probs))
-                st.write(f"**Predicted class index:** {pred}")
+                        mod_logits     = out
+                        jam_logits     = None
+                        jamtype_logits = None
+
+                    # Compute softmax probabilities
+                    mod_probs = F.softmax(mod_logits, dim=1).cpu().numpy().flatten()
+                    jam_probs = None
+                    jt_probs  = None
+                    if jam_logits is not None:
+                        jam_probs = F.softmax(jam_logits, dim=1).cpu().numpy().flatten()
+                    if jamtype_logits is not None and jam_probs is not None and jam_probs.argmax() == 1:
+                        jt_probs = F.softmax(jamtype_logits, dim=1).cpu().numpy().flatten()
+
+                    # Map to human-readable predictions
+                    mod_pred     = mod_classes[int(mod_probs.argmax())]
+                    jam_pred     = jam_classes[int(jam_probs.argmax())] if jam_probs is not None else 'N/A'
+                    jamtype_pred = jam_type_classes[int(jt_probs.argmax())] if jt_probs is not None else 'N/A'
+
+                # Display results
+                st.write("**Predicted Modulation:**", mod_pred)
+                st.bar_chart(mod_probs)
+
+                st.write("**Jamming Detected?**", jam_pred)
+                if jam_probs is not None:
+                    st.bar_chart(jam_probs)
+
+                st.write("**Jamming Type:**", jamtype_pred)
+                if jt_probs is not None:
+                    st.bar_chart(jt_probs)
 
 # Synthetic data mix explanation
 st.sidebar.markdown("---")
