@@ -30,8 +30,16 @@ This repository provides a modular stack for RF Machine Learning (RFML) from dat
    ```bash
    scripts/generate_dataset.py --output dataset.h5 --samples 5000 --length 1024
    ```
+   # Optional: use GNURadio flowgraphs for real RF signals
+   ```bash
+   scripts/generate_dataset.py --output dataset_grc.h5 --samples 5000 --length 1024 --use-grc
+   ```
+4. **Verify Dataset**
+   ```bash
+   scripts/verify_dataset.py --data dataset.h5
+   ```
 
-4. **Train Model**
+5. **Train Model**
    - Using CLI args:
      ```bash
      python3 src/training/train.py --data dataset.h5 --epochs 50 --batch_size 128 --lr 1e-3 \
@@ -53,14 +61,14 @@ This repository provides a modular stack for RF Machine Learning (RFML) from dat
      python3 src/training/train.py --config configs/train.yaml
      ```
 
-5. **Evaluate Model**
+6. **Evaluate Model**
    ```bash
    scripts/evaluate.py --data dataset.h5 --model deployments/rfml_cnn.pt \
      --mod-classes deployments/mod_classes.txt --jam-type-classes deployments/jam_type_classes.txt \
      --tta
    ```
 
-6. **Inference / Deployment**
+7. **Inference / Deployment**
    - TorchScript inference: `src/deployment/inference.py`
    - TensorRT conversion: `src/deployment/tensorrt_builder.py`
 
