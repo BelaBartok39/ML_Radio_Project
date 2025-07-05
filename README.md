@@ -85,6 +85,39 @@ This repository provides a modular stack for RF Machine Learning (RFML) from dat
        --trt-engine deployments/rfml_cnn_trt.pth --input-length 1024
      ```
 
+## Stage 5: Live GNU Radio Integration & Benchmarking
+
+### 5.1 Build & Install OOT Block
+```bash
+# From project root
+git clone /path/to/this/repo grc/python_mod_classifier
+cd grc/python_mod_classifier
+mkdir build && cd build
+cmake ..
+make
+sudo make install
+sudo ldconfig
+```
+- This installs the `modulation_classifier` block into GNU Radio.
+
+### 5.2 Use Block in GRC Flowgraph
+1. Open GNU Radio Companion.
+2. Add the `Python Module` block or search for `modulation_classifier`.
+3. Set `model_path` to your TorchScript model (e.g., `deployments/rfml_cnn.pt`).
+4. Run the flowgraph to see live classification prints.
+
+### 5.3 Benchmarking on Jetson
+```bash
+# Build TensorRT engine if desired
+python3 src/deployment/tensorrt_builder.py \
+  --model deployments/rfml_cnn.pt \
+  --engine deployments/rfml_cnn_trt.pth --input-length 1024 --batch-size 1 --fp16
+
+# Run benchmark
+scripts/benchmark_jetson.py --model deployments/rfml_cnn.pt \
+  --trt-engine deployments/rfml_cnn_trt.pth --input-length 1024 --batch-size 1 --runs 200 --device cuda
+```
+
 ## Configuration
 
 - All scripts accept `--help` for detailed usage.
