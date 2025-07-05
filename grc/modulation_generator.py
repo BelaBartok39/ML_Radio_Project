@@ -24,5 +24,21 @@ def generate_signal(length: int, mod_type: str):
     Returns:
     - numpy.ndarray of shape (length,) dtype=np.complex64
     """
-    # TODO: Implement using GNU Radio flowgraph
-    raise NotImplementedError("Please generate and implement modulation_generator via GRC.")
+    import numpy as np
+    # Define constellation symbols for different modulation types
+    if mod_type.upper() == 'BPSK':
+        symbols = np.array([1+0j, -1+0j])
+    elif mod_type.upper() == 'QPSK':
+        symbols = np.array([1+1j, -1+1j, -1-1j, 1-1j]) / np.sqrt(2)
+    elif mod_type.upper() == '8PSK':
+        angles = np.arange(8) * 2 * np.pi / 8
+        symbols = np.exp(1j * angles)
+    elif mod_type.upper() == '16QAM':
+        re = np.array([-3, -1, 1, 3])
+        im = np.array([-3, -1, 1, 3])
+        symbols = np.array([x + 1j*y for x in re for y in im]) / np.sqrt(10)
+    else:
+        raise ValueError(f"Unsupported modulation type: {mod_type}")
+    # Randomly choose symbols to fill the requested length
+    data = np.random.choice(symbols, size=length)
+    return data.astype(np.complex64)
