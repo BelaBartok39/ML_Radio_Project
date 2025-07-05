@@ -199,4 +199,4 @@ def generate_dataset(filename, num_samples=10, val_ratio=0.1, test_ratio=0.1):
                 idx_tracker[split] += 1
 
 if __name__ == '__main__':
-    generate_dataset('gnuradio_jamming_dataset.h5', num_samples=10)
+    generate_dataset('gnuradio_jamming_dataset.h5', num_samples=4000)

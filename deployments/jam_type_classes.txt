@@ -1,0 +1,7 @@
+barrage
+chirp
+multi_tone
+none
+pulse
+sweep
+tone
