@@ -30,19 +30,23 @@ def verify_h5_dataset(filename):
             else:
                 print(f"  - {attr}: {value}")
         
-        # 3. Data statistics
+        # 3. Data statistics (if available)
         print("\n3. DATA STATISTICS (from training set):")
-        if 'train' in f and len(f['train']['signals']) > 0:
+        if 'train' in f and 'signals' in f['train']:
             signals = f['train']['signals'][:]
-            snr = f['train']['snr'][:]
-            jammed = f['train']['jammed'][:]
-            jsr = f['train']['jsr'][:]
-            
             print(f"  - Number of examples: {len(signals)}")
             print(f"  - Signal power range: [{np.min(np.abs(signals)**2):.4f}, {np.max(np.abs(signals)**2):.4f}]")
-            print(f"  - SNR range: [{np.min(snr):.1f}, {np.max(snr):.1f}] dB")
-            print(f"  - Percentage jammed: {np.mean(jammed)*100:.1f}%")
-            print(f"  - JSR range (when jammed): [{np.min(jsr[jammed]):.1f}, {np.max(jsr[jammed]):.1f}] dB")
+            # Optional SNR/JSR fields
+            if 'snr' in f['train'] and 'jsr' in f['train'] and 'jammed' in f['train']:
+                snr = f['train']['snr'][:]
+                jammed = f['train']['jammed'][:]
+                jsr = f['train']['jsr'][:]
+                print(f"  - SNR range: [{np.min(snr):.1f}, {np.max(snr):.1f}] dB")
+                print(f"  - Percentage jammed: {np.mean(jammed)*100:.1f}%")
+                if np.any(jammed):
+                    print(f"  - JSR range (when jammed): [{np.min(jsr[jammed]):.1f}, {np.max(jsr[jammed]):.1f}] dB")
+            else:
+                print("  - No SNR/JSR metadata available, skipping stats.")
         
         # 4. Modulation distribution
         print("\n4. MODULATION DISTRIBUTION:")
@@ -65,7 +69,7 @@ def verify_h5_dataset(filename):
                     print(f"  - {jam}: {count} examples")
         
         # 6. Visualize sample signals
-        if 'train' in f and len(f['train']['signals']) >= 4:
+        if 'train' in f and 'signals' in f['train'] and len(f['train']['signals']) >= 4:
             print("\n6. CREATING VISUALIZATION...")
             
             fig, axes = plt.subplots(2, 2, figsize=(12, 10))
@@ -74,18 +78,26 @@ def verify_h5_dataset(filename):
                 ax = axes[idx//2, idx%2]
                 signal = signals[idx]
                 mod = f['train']['modulation'][idx].decode()
-                snr_val = f['train']['snr'][idx]
-                is_jammed = f['train']['jammed'][idx]
+                is_jammed = False
+                snr_val = None
+                if 'snr' in f['train']:
+                    snr_val = f['train']['snr'][idx]
+                if 'jammed' in f['train']:
+                    is_jammed = f['train']['jammed'][idx]
                 
                 # Time domain
                 ax.plot(signal.real[:200], 'b-', alpha=0.7, label='I')
                 ax.plot(signal.imag[:200], 'r-', alpha=0.7, label='Q')
                 
-                title = f"{mod}, SNR={snr_val:.1f}dB"
+                # Build title with optional SNR
+                title = mod
+                if snr_val is not None:
+                    title += f", SNR={snr_val:.1f}dB"
                 if is_jammed:
-                    jam_type = f['train']['jamming_type'][idx].decode()
-                    jsr_val = f['train']['jsr'][idx]
-                    title += f"\nJammed ({jam_type}), JSR={jsr_val:.1f}dB"
+                    jam_type = f['train']['jamming_type'][idx].decode() if 'jamming_type' in f['train'] else ''
+                    jsr_val = f['train']['jsr'][idx] if 'jsr' in f['train'] else None
+                    if jsr_val is not None:
+                        title += f"\nJammed ({jam_type}), JSR={jsr_val:.1f}dB"
                 
                 ax.set_title(title)
                 ax.set_xlabel('Sample')
@@ -111,15 +123,17 @@ def verify_h5_dataset(filename):
                 checks_passed = False
         
         # Check SNR range
-        if 'train' in f and len(snr) > 0:
-            if np.all((snr >= -20) & (snr <= 40)):
+        if 'train' in f and 'snr' in f['train']:
+            snr_vals = f['train']['snr'][:]
+            if np.all((snr_vals >= -20) & (snr_vals <= 40)):
                 print("  ✓ SNR values are in reasonable range")
             else:
                 print("  ✗ Some SNR values are out of expected range")
                 checks_passed = False
         
         # Check jamming consistency
-        if 'train' in f:
+        # Check jamming consistency
+        if 'train' in f and 'jammed' in f['train'] and 'jsr' in f['train']:
             jammed_mask = f['train']['jammed'][:]
             jsr_vals = f['train']['jsr'][:]
             if np.all((jsr_vals > 0) == jammed_mask):

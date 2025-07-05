@@ -15,15 +15,19 @@ class MultiTaskCNN(nn.Module):
       - binary jamming detection
       - jamming type classification
     """
-    def __init__(self, num_mod_classes: int, num_jam_types: int, dropout: float = 0.3):
+    def __init__(self, num_mod_classes: int, num_jam_types: int, input_length: int = 1024, dropout: float = 0.3):
         super(MultiTaskCNN, self).__init__()
+        # Convolutional backbone
         self.conv1 = nn.Conv1d(2, 32, kernel_size=7, padding=3)
         self.conv2 = nn.Conv1d(32, 64, kernel_size=5, padding=2)
         self.conv3 = nn.Conv1d(64, 128, kernel_size=3, padding=1)
         self.pool = nn.MaxPool1d(2)
         self.dropout = nn.Dropout(dropout)
-        # assuming input length 1024 -> after 3 pools: 1024/8 = 128
-        self.fc1 = nn.Linear(128 * 128, 256)
+        # Compute flattened feature size after pooling layers
+        pools = 3
+        out_len = input_length // (2 ** pools)
+        self.flatten_size = 128 * out_len
+        self.fc1 = nn.Linear(self.flatten_size, 256)
 
         self.classifier_mod = nn.Linear(256, num_mod_classes)
         self.classifier_jam = nn.Linear(256, 2)

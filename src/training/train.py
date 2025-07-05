@@ -27,7 +27,13 @@ def train(args):
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-    model = MultiTaskCNN(len(train_ds.mod_classes), len(train_ds.jam_type_classes), dropout=args.dropout).to(device)
+    # Initialize model with dynamic input length to compute correct feature dimensions
+    model = MultiTaskCNN(
+        num_mod_classes=len(train_ds.mod_classes),
+        num_jam_types=len(train_ds.jam_type_classes),
+        input_length=args.input_length,
+        dropout=args.dropout
+    ).to(device)
     optimizer = Adam(model.parameters(), lr=args.lr)
     loss_fn = nn.CrossEntropyLoss()
 
