@@ -1,0 +1,24 @@
+# Test Dataset Generation Configuration
+
+# Output settings
+output: "test_dataset.h5"
+num-samples: 1000  # Small test dataset
+
+# Dataset splits
+val-ratio: 0.2     # 20% validation
+test-ratio: 0.2    # 20% test, 60% training
+
+# Signal parameters
+sample-rate: 1000000  # 1 MHz
+samples-per_example: 1024
+
+# SNR parameters (in dB)
+snr-range: [0, 30]
+
+# Jamming parameters
+jam-prob: 0.3        # 30% of samples will be jammed
+jsr-range: [5, 20]   # JSR range in dB
+
+# For testing
+random-seed: 123     # Fixed seed for testing
+force-overwrite: true

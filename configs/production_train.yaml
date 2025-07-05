@@ -1,0 +1,66 @@
+# Production Training Configuration for Big GPU Machine
+# Recommended for 100K-500K sample datasets
+
+# Dataset parameters
+data: "gnuradio_jamming_dataset.h5"  # Will be updated for production dataset
+val_split: "val"
+test_split: "test"
+
+# Model architecture
+input_length: 1024
+dropout: 0.3
+model_name: "rfml_production_cnn"
+
+# Training hyperparameters
+epochs: 100
+batch_size: 1024  # Large batch for big GPU
+lr: 0.001
+weight_decay: 0.0001
+optimizer: "adamw"  # More robust than adam
+
+# Learning rate scheduling
+lr_scheduler: "cosine"
+warmup_epochs: 5
+min_lr: 0.000001
+
+# Multi-task loss weights
+mod_loss_weight: 1.0
+jam_detection_weight: 0.5
+jam_type_weight: 0.3
+
+# Data loading
+num_workers: 8  # Adjust based on CPU cores
+pin_memory: true
+prefetch_factor: 2
+
+# Mixed precision training (for speed)
+use_amp: true
+grad_clip_norm: 1.0
+
+# Checkpointing
+save_every_n_epochs: 10
+early_stopping_patience: 15
+best_metric: "val_mod_acc"
+
+# Output
+output_dir: "deployments/production"
+log_level: "INFO"
+tensorboard_log_dir: "logs/production"
+
+# Hardware optimization
+device: "cuda"
+torch_compile: true  # PyTorch 2.0 compilation
+dataloader_persistent_workers: true
+
+# Validation & testing
+val_frequency: 1  # Validate every epoch
+test_at_end: true
+save_predictions: true
+
+# Data augmentation (RF-specific)
+augmentation:
+  enable: true
+  snr_var_db: 2.0      # SNR variation ±2dB
+  phase_rotation: true  # Random phase rotation
+  freq_shift_pct: 0.05  # Frequency shift ±5%
+  time_shift: true     # Circular time shifting

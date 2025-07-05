@@ -1,0 +1,27 @@
+# GNU Radio Dataset Generation Configuration
+
+# Output settings
+output_file: "production_dataset.h5"
+num-samples: 100000  # 100K samples for production
+
+# Dataset splits
+val-ratio: 0.15    # 15% validation
+test-ratio: 0.15   # 15% test, 70% training
+
+# Signal parameters
+sample-rate: 1000000  # 1 MHz
+samples-per_example: 1024
+
+# SNR parameters (in dB)
+snr-range: [-5, 35]  # Extended range for robustness
+
+# Jamming parameters
+jam-prob: 0.3        # 30% of samples will be jammed
+jsr-range: [0, 25]   # JSR range in dB (stronger jamming than before)
+
+# Modulation types (automatically: bpsk, qpsk, 8psk, qam16, qam64)
+# Jamming types (automatically: tone, multi_tone, chirp, barrage, pulse, sweep)
+
+# Advanced options
+random-seed: 42      # For reproducible results
+force-overwrite: false
