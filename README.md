@@ -123,19 +123,55 @@ scripts/benchmark_jetson.py --model deployments/rfml_cnn.pt \
 - All scripts accept `--help` for detailed usage.
 - Config files in `configs/` can be YAML or JSON. Keys map directly to CLI args.
 
-## Dependencies
+## Production Pipeline (Large-Scale)
+For large-scale dataset generation and model training on powerful GPU clusters or multi-GPU machines, we provide a separate production pipeline with optimized configurations.
 
-- Python 3.8+
-- PyTorch
-- NumPy
-- h5py
-- PyYAML
-- scikit-learn
-- matplotlib
-- tqdm
+### Production Parameters
+Below are key parameters defined in `configs/production_train.yaml`:
+- **data**: Path to the HDF5 dataset (e.g., `gnuradio_jamming_dataset.h5`).
+- **val_split**, **test_split**: Names of validation and test splits in the HDF5 file.
+- **input_length**: Number of samples per example (default: 1024).
+- **dropout**: Dropout probability in the CNN.
+- **model_name**: Output model name prefix (e.g., `rfml_production_cnn`).
+- **epochs**: Total training epochs (e.g., 100).
+- **batch_size**: Large batch size (e.g., 1024).
+- **lr**, **min_lr**: Initial and minimum learning rates (e.g., 0.001 and 0.000001).
+- **weight_decay**: Optimizer weight decay (e.g., 0.0001).
+- **optimizer**: Optimizer type (e.g., `adamw`).
+- **lr_scheduler**, **warmup_epochs**: Scheduler type (e.g., `cosine`) and warmup.
+- **mod_loss_weight**, **jam_detection_weight**, **jam_type_weight**: Multi-task loss weights.
+- **num_workers**, **pin_memory**, **prefetch_factor**, **dataloader_persistent_workers**: DataLoader optimizations.
+- **use_amp**, **grad_clip_norm**: Mixed precision and gradient clipping.
+- **torch_compile**: Enable PyTorch 2.0 compilation.
+- **save_every_n_epochs**, **early_stopping_patience**, **best_metric**: Checkpointing and early stopping.
+- **output_dir**, **tensorboard_log_dir**, **log_level**: Output and logging directories.
+- **device**: Target device (e.g., `cuda`).
+
+### Production Workflow
+1. **Generate large HDF5 dataset**
+   ```bash
+   python scripts/gnu_dataset_generator.py --config configs/dataset_generation.yaml
+   ```
+   This uses actual GNU Radio flowgraphs for realistic signals.
+
+2. **Train model**
+   ```bash
+   python src/training/production_train.py --config configs/production_train.yaml
+   ```
+   The configuration file includes optimized settings for high-throughput training and mixed precision.
+
+3. **Evaluate and save TorchScript**
+   At the end of training, the script will automatically validate on the test split, save TorchScript (`.pt`), PyTorch checkpoints, and class mappings in `output_dir`.
+
+4. **Deploy**
+   - **TorchScript inference**: `src/deployment/inference.py`
+   - **TensorRT conversion**: `src/deployment/tensorrt_builder.py`
+
+### Local Testing vs Production
+- **Local Testing Workflow**: Use smaller dataset sizes and `scripts/generate_dataset.py` with `src/training/train.py` for quick experiments on your laptop.
+- **Production Pipeline**: Use `scripts/gnu_dataset_generator.py` and `src/training/production_train.py` with `configs/production_train.yaml` for large-scale runs on GPUs or clusters.
 
 ## Next Steps
-
 - TensorRT builder for optimized inference
 - Custom GNU Radio block for live inference
 - Experiment tracking (e.g., MLflow, WandB)
