@@ -1,0 +1,4 @@
+chirp
+none
+pulse
+tone
