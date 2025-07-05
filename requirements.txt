@@ -1,0 +1,6 @@
+# RFML Project Dependencies
+numpy
+h5py
+torch
+matplotlib
+streamlit

@@ -1,10 +1,10 @@
 # Training configuration for RFML model
 
-data: gnuradio_jamming_dataset.h5
-epochs: 50
+data: dataset_big_test.h5
+epochs: 100
 batch_size: 64
 lr: 0.001
 dropout: 0.3
 input_length: 1024
 output_dir: deployments
-model_name: rfml_cnn
+model_name: rfml_cnn_test
