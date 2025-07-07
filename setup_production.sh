@@ -27,12 +27,25 @@ ENV_NAME="rfml_production"
 echo "📦 Setting up Python environment: $ENV_NAME"
 
 if command -v conda &> /dev/null; then
+    # Ensure conda is initialized for non-interactive shells
+    __conda_setup="$('conda' 'shell.bash' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
+    else
+        if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
+            . "$HOME/miniconda3/etc/profile.d/conda.sh"
+        elif [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+            . "$HOME/anaconda3/etc/profile.d/conda.sh"
+        else
+            export PATH="$HOME/miniconda3/bin:$PATH"
+        fi
+    fi
     if conda env list | grep -q $ENV_NAME; then
         echo "Environment $ENV_NAME already exists. Activating..."
-        source activate $ENV_NAME
+        conda activate $ENV_NAME
     else
         conda create -n $ENV_NAME python=3.10 -y
-        source activate $ENV_NAME
+        conda activate $ENV_NAME
     fi
 else
     echo "conda not found. Using python venv instead."
