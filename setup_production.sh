@@ -22,16 +22,24 @@ fi
 echo "✅ NVIDIA GPU detected:"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 
-# Create conda environment
+# Create conda environment or fallback to python venv
 ENV_NAME="rfml_production"
-echo "📦 Creating conda environment: $ENV_NAME"
+echo "📦 Setting up Python environment: $ENV_NAME"
 
-if conda env list | grep -q $ENV_NAME; then
-    echo "Environment $ENV_NAME already exists. Activating..."
-    source activate $ENV_NAME
+if command -v conda &> /dev/null; then
+    if conda env list | grep -q $ENV_NAME; then
+        echo "Environment $ENV_NAME already exists. Activating..."
+        source activate $ENV_NAME
+    else
+        conda create -n $ENV_NAME python=3.10 -y
+        source activate $ENV_NAME
+    fi
 else
-    conda create -n $ENV_NAME python=3.10 -y
-    source activate $ENV_NAME
+    echo "conda not found. Using python venv instead."
+    if [ ! -d "$ENV_NAME" ]; then
+        python3 -m venv $ENV_NAME
+    fi
+    source $ENV_NAME/bin/activate
 fi
 
 # Install PyTorch with CUDA
