@@ -3,3 +3,4 @@ design_doc.md
 gnuradio_jamming_dataset.h5
 dataset_samples.png 
 training.log
+__pycache__/
